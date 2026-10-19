@@ -11,6 +11,11 @@ const sessionSchema = new mongoose.Schema(
       enum: ["easy", "medium", "hard"],
       required: true,
     },
+    visibility: {
+      type: String,
+      enum: ["public", "private"],
+      default: "public",
+    },
     host: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -28,6 +33,10 @@ const sessionSchema = new mongoose.Schema(
     },
     // stream video call ID
     callId: {
+      type: String,
+      default: "",
+    },
+    inviteCode: {
       type: String,
       default: "",
     },

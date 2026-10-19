@@ -1,11 +1,9 @@
-import { Link, useLocation } from "react-router";
-import { BookOpenIcon, LayoutDashboardIcon, SparklesIcon } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { BookOpenIcon, BriefcaseIcon, LayoutDashboardIcon, SparklesIcon } from "lucide-react";
 import { UserButton } from "@clerk/clerk-react";
 
 function Navbar() {
   const location = useLocation();
-
-  console.log(location);
 
   const isActive = (path) => location.pathname === path;
 
@@ -48,21 +46,39 @@ function Navbar() {
             </div>
           </Link>
 
-          {/* DASHBORD PAGE LINK */}
+          {/* JOBS PAGE LINK */}
+          <Link
+            to={"/jobs"}
+            className={`px-4 py-2.5 rounded-lg transition-all duration-200
+              ${
+                isActive("/jobs")
+                  ? "bg-primary text-primary-content"
+                  : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
+              }
+
+              `}
+          >
+            <div className="flex items-center gap-x-2.5">
+              <BriefcaseIcon className="size-4" />
+              <span className="font-medium hidden sm:inline">Jobs</span>
+            </div>
+          </Link>
+
+          {/* DASHBOARD PAGE LINK */}
           <Link
             to={"/dashboard"}
-            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
+            className={`px-4 py-2.5 rounded-lg transition-all duration-200
               ${
                 isActive("/dashboard")
                   ? "bg-primary text-primary-content"
                   : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
               }
-              
+
               `}
           >
             <div className="flex items-center gap-x-2.5">
               <LayoutDashboardIcon className="size-4" />
-              <span className="font-medium hidden sm:inline">Dashbord</span>
+              <span className="font-medium hidden sm:inline">Dashboard</span>
             </div>
           </Link>
 

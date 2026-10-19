@@ -2,32 +2,31 @@ import { TrophyIcon, UsersIcon } from "lucide-react";
 
 function StatsCards({ activeSessionsCount, recentSessionsCount }) {
   return (
-    <div className="lg:col-span-1 grid grid-cols-1 gap-6">
-      {/* Active Count */}
-      <div className="card bg-base-100 border-2 border-primary/20 hover:border-primary/40">
-        <div className="card-body">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-primary/10 rounded-2xl">
-              <UsersIcon className="w-7 h-7 text-primary" />
-            </div>
-            <div className="badge badge-primary">Live</div>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+            <UsersIcon className="size-6" />
           </div>
-          <div className="text-4xl font-black mb-1">{activeSessionsCount}</div>
-          <div className="text-sm opacity-60">Active Sessions</div>
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
+            Live
+          </span>
         </div>
+        <div className="text-4xl font-black tracking-tight text-slate-950">{activeSessionsCount}</div>
+        <div className="mt-2 text-sm text-slate-500">Active Sessions</div>
       </div>
 
-      {/* Recent Count */}
-      <div className="card bg-base-100 border-2 border-secondary/20 hover:border-secondary/40">
-        <div className="card-body">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-secondary/10 rounded-2xl">
-              <TrophyIcon className="w-7 h-7 text-secondary" />
-            </div>
+      <div className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+            <TrophyIcon className="size-6" />
           </div>
-          <div className="text-4xl font-black mb-1">{recentSessionsCount}</div>
-          <div className="text-sm opacity-60">Total Sessions</div>
+          <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-violet-700">
+            Total
+          </span>
         </div>
+        <div className="text-4xl font-black tracking-tight text-slate-950">{recentSessionsCount}</div>
+        <div className="mt-2 text-sm text-slate-500">Total Sessions</div>
       </div>
     </div>
   );

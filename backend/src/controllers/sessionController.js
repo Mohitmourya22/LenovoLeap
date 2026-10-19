@@ -3,7 +3,7 @@ import Session from "../models/Session.js";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty } = req.body;
+    const { problem, difficulty, visibility = "public" } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
@@ -13,15 +13,16 @@ export async function createSession(req, res) {
 
     // generate a unique call id for stream video
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const inviteCode = `${callId}_${Math.random().toString(36).substring(2, 8)}`;
 
     // create session in db
-    const session = await Session.create({ problem, difficulty, host: userId, callId });
+    const session = await Session.create({ problem, difficulty, visibility, host: userId, callId, inviteCode });
 
     // create stream video call
     await streamClient.video.call("default", callId).getOrCreate({
       data: {
         created_by_id: clerkId,
-        custom: { problem, difficulty, sessionId: session._id.toString() },
+        custom: { problem, difficulty, visibility, sessionId: session._id.toString() },
       },
     });
 
