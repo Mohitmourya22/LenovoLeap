@@ -1,6 +1,6 @@
 import { useUser } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/piston";
@@ -14,6 +14,8 @@ import OutputPanel from "../components/OutputPanel";
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
+import { useSessionSocket } from "../hooks/useSessionSocket";
+import { UsersIcon, KeyboardIcon } from "lucide-react";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -45,6 +47,10 @@ function SessionPage() {
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
+  const [isRemoteUpdate, setIsRemoteUpdate] = useState(false);
+  const typingTimeoutRef = useRef(null);
+
+  const { socket, participants, typingUsers, syncCode, setTyping } = useSessionSocket(id, user);
 
   // auto-join session if user is not already a participant and not the host
   useEffect(() => {
@@ -70,6 +76,15 @@ function SessionPage() {
     }
   }, [problemData, selectedLanguage]);
 
+  useEffect(() => {
+    if (isRemoteUpdate) {
+      setIsRemoteUpdate(false);
+      return;
+    }
+
+    syncCode(code, selectedLanguage);
+  }, [code, selectedLanguage]);
+
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setSelectedLanguage(newLang);
@@ -77,7 +92,27 @@ function SessionPage() {
     const starterCode = problemData?.starterCode?.[newLang] || "";
     setCode(starterCode);
     setOutput(null);
+    syncCode(starterCode, newLang);
   };
+
+  useEffect(() => {
+    const handleIncomingCode = ({ code: nextCode, language, userId }) => {
+      if (!nextCode || userId === user?.id) return;
+
+      if (language && language !== selectedLanguage) {
+        setSelectedLanguage(language);
+      }
+
+      setIsRemoteUpdate(true);
+      setCode(nextCode);
+    };
+
+    socket.on("code:sync", handleIncomingCode);
+
+    return () => {
+      socket.off("code:sync", handleIncomingCode);
+    };
+  }, [socket, selectedLanguage, user?.id]);
 
   const handleRunCode = async () => {
     setIsRunning(true);
@@ -121,6 +156,14 @@ function SessionPage() {
                           Host: {session?.host?.name || "Loading..."} •{" "}
                           {session?.participant ? 2 : 1}/2 participants
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                          <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-700">
+                            {participants.length} online
+                          </span>
+                          <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-700">
+                            {typingUsers.length} typing
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -237,7 +280,14 @@ function SessionPage() {
                       code={code}
                       isRunning={isRunning}
                       onLanguageChange={handleLanguageChange}
-                      onCodeChange={(value) => setCode(value)}
+                      onCodeChange={(value) => {
+                        setCode(value);
+                        setTyping(true);
+                        if (typingTimeoutRef.current) {
+                          clearTimeout(typingTimeoutRef.current);
+                        }
+                        typingTimeoutRef.current = setTimeout(() => setTyping(false), 800);
+                      }}
                       onRunCode={handleRunCode}
                     />
                   </Panel>
