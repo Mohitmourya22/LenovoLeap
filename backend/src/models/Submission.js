@@ -3,7 +3,9 @@ import mongoose from "mongoose";
 const submissionSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    problem: { type: mongoose.Schema.Types.ObjectId, ref: "Problem", required: true },
+    problem: { type: mongoose.Schema.Types.Mixed, default: null },
+    problemId: { type: String, default: "" },
+    problemTitle: { type: String, default: "" },
     session: { type: mongoose.Schema.Types.ObjectId, ref: "Session", default: null },
     language: { type: String, required: true },
     sourceCode: { type: String, required: true },
