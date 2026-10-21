@@ -1,6 +1,8 @@
+import { useState } from "react";
 import Editor from "@monaco-editor/react";
-import { Loader2Icon, PlayIcon } from "lucide-react";
+import { Loader2Icon, PlayIcon, SparklesIcon } from "lucide-react";
 import { LANGUAGE_CONFIG } from "../data/problems";
+import AiAssistModal from "./AiAssistModal";
 
 function CodeEditorPanel({
   selectedLanguage,
@@ -9,7 +11,10 @@ function CodeEditorPanel({
   onLanguageChange,
   onCodeChange,
   onRunCode,
+  problemTitle = "",
 }) {
+  const [showAiModal, setShowAiModal] = useState(false);
+
   return (
     <div className="h-full bg-base-300 flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 bg-base-100 border-t border-base-300">
@@ -28,19 +33,31 @@ function CodeEditorPanel({
           </select>
         </div>
 
-        <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode}>
-          {isRunning ? (
-            <>
-              <Loader2Icon className="size-4 animate-spin" />
-              Running...
-            </>
-          ) : (
-            <>
-              <PlayIcon className="size-4" />
-              Run Code
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-sm gap-2 border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 hover:from-indigo-100 hover:to-violet-100 transition shadow-sm"
+            onClick={() => setShowAiModal(true)}
+            title="Open AI Code Insights"
+          >
+            <SparklesIcon className="size-4 text-indigo-600 animate-pulse" />
+            <span className="font-semibold">AI Insights</span>
+          </button>
+
+          <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode}>
+            {isRunning ? (
+              <>
+                <Loader2Icon className="size-4 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <PlayIcon className="size-4" />
+                Run Code
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1">
@@ -59,6 +76,14 @@ function CodeEditorPanel({
           }}
         />
       </div>
+
+      <AiAssistModal
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        code={code}
+        language={selectedLanguage}
+        problemTitle={problemTitle}
+      />
     </div>
   );
 }

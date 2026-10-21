@@ -11,6 +11,7 @@ import { executeCode } from "../lib/piston";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
+import { useCreateSubmission } from "../hooks/useSubmissions";
 
 function ProblemPage() {
   const { id } = useParams();
@@ -22,6 +23,7 @@ function ProblemPage() {
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
+  const createSubmissionMutation = useCreateSubmission();
   const currentProblem = PROBLEMS[currentProblemId];
 
   // update problem when URL param changes
@@ -57,17 +59,14 @@ function ProblemPage() {
   };
 
   const normalizeOutput = (output) => {
-    // normalize output for comparison (trim whitespace, handle different spacing)
     return output
       .trim()
       .split("\n")
       .map((line) =>
         line
           .trim()
-          // remove spaces after [ and before ]
           .replace(/\[\s+/g, "[")
           .replace(/\s+\]/g, "]")
-          // normalize spaces around commas to single space after comma
           .replace(/\s*,\s*/g, ",")
       )
       .filter((line) => line.length > 0)
@@ -85,25 +84,40 @@ function ProblemPage() {
     setIsRunning(true);
     setOutput(null);
 
+    const startTime = performance.now();
     const result = await executeCode(selectedLanguage, code);
+    const runtimeMs = Math.round(performance.now() - startTime);
+
     setOutput(result);
     setIsRunning(false);
 
-    // check if code executed successfully and matches expected output
+    let status = "runtime-error";
 
     if (result.success) {
       const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
 
       if (testsPassed) {
+        status = "accepted";
         triggerConfetti();
         toast.success("All tests passed! Great job!");
       } else {
+        status = "wrong-answer";
         toast.error("Tests failed. Check your output!");
       }
     } else {
       toast.error("Code execution failed!");
     }
+
+    createSubmissionMutation.mutate({
+      problemId: currentProblem.id,
+      problemTitle: currentProblem.title,
+      language: selectedLanguage,
+      sourceCode: code,
+      status,
+      runtimeMs,
+      testResult: result.output || result.error || "",
+    });
   };
 
   return (
@@ -133,6 +147,7 @@ function ProblemPage() {
                   selectedLanguage={selectedLanguage}
                   code={code}
                   isRunning={isRunning}
+                  problemTitle={currentProblem.title}
                   onLanguageChange={handleLanguageChange}
                   onCodeChange={setCode}
                   onRunCode={handleRunCode}

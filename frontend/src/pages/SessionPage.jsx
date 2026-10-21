@@ -7,9 +7,10 @@ import { executeCode } from "../lib/piston";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
-import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
+import { Loader2Icon, LogOutIcon, PhoneOffIcon, Share2Icon, CheckIcon } from "lucide-react";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
+import toast from "react-hot-toast";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
@@ -23,6 +24,15 @@ function SessionPage() {
   const { user } = useUser();
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyInviteLink = () => {
+    const inviteUrl = window.location.href;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedLink(true);
+    toast.success("Room invite link copied to clipboard!");
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -167,6 +177,19 @@ function SessionPage() {
                       </div>
 
                       <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleCopyInviteLink}
+                          className="btn btn-outline btn-sm gap-2"
+                          title="Copy session invite URL to share"
+                        >
+                          {copiedLink ? (
+                            <CheckIcon className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Share2Icon className="w-4 h-4 text-indigo-600" />
+                          )}
+                          <span>{copiedLink ? "Link Copied" : "Share Room"}</span>
+                        </button>
+
                         <span
                           className={`badge badge-lg ${getDifficultyBadgeClass(
                             session?.difficulty
@@ -279,6 +302,7 @@ function SessionPage() {
                       selectedLanguage={selectedLanguage}
                       code={code}
                       isRunning={isRunning}
+                      problemTitle={session?.problem || "Interview Session"}
                       onLanguageChange={handleLanguageChange}
                       onCodeChange={(value) => {
                         setCode(value);

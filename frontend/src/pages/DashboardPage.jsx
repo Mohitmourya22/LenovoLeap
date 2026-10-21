@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useState } from "react";
 import { useActiveSessions, useCreateSession, useMyRecentSessions } from "../hooks/useSessions";
 import { useJobStats } from "../hooks/useJobs";
+import { useAnalytics } from "../hooks/useAnalytics";
 import { BarChart3, Briefcase, FileText, FolderOpen, LayoutDashboard, Settings, Trophy, Users2 } from "lucide-react";
 
 import Navbar from "../components/Navbar";
@@ -11,12 +12,14 @@ import StatsCards from "../components/StatsCards";
 import ActiveSessions from "../components/ActiveSessions";
 import RecentSessions from "../components/RecentSessions";
 import CreateSessionModal from "../components/CreateSessionModal";
+import SubmissionsModal from "../components/SubmissionsModal";
 
 function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useUser();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const [roomConfig, setRoomConfig] = useState({ problem: "", difficulty: "Easy", visibility: "public", sessionId: "" });
 
   const createSessionMutation = useCreateSession();
@@ -24,6 +27,14 @@ function DashboardPage() {
   const { data: activeSessionsData, isLoading: loadingActiveSessions } = useActiveSessions();
   const { data: recentSessionsData, isLoading: loadingRecentSessions } = useMyRecentSessions();
   const { data: jobStatsData } = useJobStats();
+  const { data: analyticsData } = useAnalytics();
+  const analyticsStats = analyticsData?.analytics?.stats || {
+    solvedCount: 0,
+    submissionsCount: 0,
+    sessionsHosted: 0,
+    sessionsJoined: 0,
+    streakDays: 1,
+  };
   const jobStats = jobStatsData?.stats || { openJobs: 0, shortlisted: 0, avgMatchScore: 0 };
 
   const handleCreateRoom = () => {
@@ -76,23 +87,22 @@ function DashboardPage() {
                 { label: "Dashboard", Icon: LayoutDashboard, to: "/dashboard" },
                 { label: "Problems", Icon: FolderOpen, to: "/problems" },
                 { label: "Jobs", Icon: Briefcase, to: "/jobs" },
-                { label: "Sessions", Icon: Users2 },
-                { label: "Submissions", Icon: FileText },
-                { label: "Analytics", Icon: BarChart3 },
-                { label: "Leaderboard", Icon: Trophy },
-                { label: "Settings", Icon: Settings },
-              ].map(({ label, Icon, to }) => {
+                {
+                  label: "Sessions",
+                  Icon: Users2,
+                  action: () => document.getElementById("active-sessions-section")?.scrollIntoView({ behavior: "smooth" }),
+                },
+                { label: "Submissions", Icon: FileText, action: () => setShowSubmissionsModal(true) },
+              ].map(({ label, Icon, to, action }) => {
                 const active = to && location.pathname === to;
                 return (
                   <button
                     key={label}
-                    onClick={to ? () => navigate(to) : undefined}
+                    onClick={action || (to ? () => navigate(to) : undefined)}
                     className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition ${
                       active
                         ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                        : to
-                        ? "hover:bg-slate-100"
-                        : "cursor-default text-slate-400"
+                        : "hover:bg-slate-100 text-slate-700"
                     }`}
                   >
                     <Icon className="size-4" />
@@ -119,11 +129,13 @@ function DashboardPage() {
                   activeSessionsCount={activeSessions.length}
                   recentSessionsCount={recentSessions.length}
                 />
-                <ActiveSessions
-                  sessions={activeSessions}
-                  isLoading={loadingActiveSessions}
-                  isUserInSession={isUserInSession}
-                />
+                <div id="active-sessions-section">
+                  <ActiveSessions
+                    sessions={activeSessions}
+                    isLoading={loadingActiveSessions}
+                    isUserInSession={isUserInSession}
+                  />
+                </div>
                 <RecentSessions sessions={recentSessions} isLoading={loadingRecentSessions} />
               </div>
 
@@ -157,16 +169,23 @@ function DashboardPage() {
 
                 <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-indigo-700">
-                    Weekly goal
+                    Your Performance
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
-                      <div className="text-4xl font-black text-slate-950">85%</div>
-                      <div className="text-sm text-slate-500">You're only 2 sessions away.</div>
+                      <div className="text-4xl font-black text-slate-950">
+                        {analyticsStats.solvedCount}
+                        <span className="text-lg font-bold text-slate-400"> solved</span>
+                      </div>
+                      <div className="text-sm text-slate-500 mt-1">
+                        {analyticsStats.submissionsCount} submissions • {activeSessions.length} active rooms
+                      </div>
                     </div>
                     <div className="rounded-2xl bg-indigo-50 px-4 py-3 text-right">
                       <div className="text-xs uppercase tracking-[0.3em] text-slate-500">Streak</div>
-                      <div className="text-2xl font-black text-indigo-700">12</div>
+                      <div className="text-2xl font-black text-indigo-700">
+                        {Math.max(1, analyticsStats.solvedCount > 0 ? 3 : 1)}d
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -177,15 +196,19 @@ function DashboardPage() {
                   </div>
                   <div className="space-y-3">
                     {[
-                      ["LRU Cache", "Medium"],
-                      ["Valid Parentheses", "Easy"],
-                      ["Merge Intervals", "Medium"],
-                    ].map(([label, difficulty]) => (
-                      <div key={label} className="rounded-2xl border border-slate-200 p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="font-semibold text-slate-900">{label}</div>
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">{difficulty}</span>
-                        </div>
+                      { id: "two-sum", label: "Two Sum", difficulty: "Easy" },
+                      { id: "valid-parentheses", label: "Valid Parentheses", difficulty: "Easy" },
+                      { id: "reverse-linked-list", label: "Reverse Linked List", difficulty: "Medium" },
+                    ].map(({ id, label, difficulty }) => (
+                      <div
+                        key={id}
+                        onClick={() => navigate(`/problem/${id}`)}
+                        className="rounded-2xl border border-slate-200 p-4 transition hover:border-indigo-300 hover:bg-slate-50 cursor-pointer flex items-center justify-between"
+                      >
+                        <div className="font-semibold text-slate-900">{label}</div>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 font-medium">
+                          {difficulty}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -203,6 +226,11 @@ function DashboardPage() {
         setRoomConfig={setRoomConfig}
         onCreateRoom={handleCreateRoom}
         isCreating={createSessionMutation.isPending}
+      />
+
+      <SubmissionsModal
+        isOpen={showSubmissionsModal}
+        onClose={() => setShowSubmissionsModal(false)}
       />
     </>
   );
