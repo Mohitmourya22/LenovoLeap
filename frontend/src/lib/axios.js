@@ -2,8 +2,15 @@ import axios from "axios";
 import { useAuth } from "@clerk/clerk-react";
 import { useMemo } from "react";
 
+const getApiBaseUrl = () => {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) return "/api";
+  const clean = raw.trim().replace(/\/+$/, "");
+  return clean.endsWith("/api") ? clean : `${clean}/api`;
+};
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: getApiBaseUrl(),
 });
 
 // Hook that returns an axios instance with the Clerk Bearer token attached.
@@ -13,7 +20,7 @@ export const useAxiosWithAuth = () => {
 
   const authAxios = useMemo(() => {
     const instance = axios.create({
-      baseURL: import.meta.env.VITE_API_URL,
+      baseURL: getApiBaseUrl(),
     });
 
     instance.interceptors.request.use(async (config) => {

@@ -57,8 +57,7 @@ function JobsPage() {
 
   const handleCreate = async (form) => {
     await createJobMutation.mutateAsync(form);
-    refetchJobs();
-    refetchStats();
+    await Promise.all([refetchJobs(), refetchStats()]);
   };
 
   return (

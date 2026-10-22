@@ -6,7 +6,7 @@ import { PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/piston";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { getDifficultyBadgeClass } from "../lib/utils";
+import { getDifficultyBadgeClass, copyToClipboard } from "../lib/utils";
 import { Loader2Icon, LogOutIcon, PhoneOffIcon, Share2Icon, CheckIcon } from "lucide-react";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
@@ -26,12 +26,16 @@ function SessionPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const handleCopyInviteLink = () => {
+  const handleCopyInviteLink = async () => {
     const inviteUrl = window.location.href;
-    navigator.clipboard.writeText(inviteUrl);
-    setCopiedLink(true);
-    toast.success("Room invite link copied to clipboard!");
-    setTimeout(() => setCopiedLink(false), 2000);
+    const ok = await copyToClipboard(inviteUrl);
+    if (ok) {
+      setCopiedLink(true);
+      toast.success("Room invite link copied to clipboard!");
+      setTimeout(() => setCopiedLink(false), 2000);
+    } else {
+      toast.error("Failed to copy link. Please copy URL from browser address bar.");
+    }
   };
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
@@ -50,10 +54,48 @@ function SessionPage() {
     isParticipant
   );
 
-  // find the problem data based on session problem title
-  const problemData = session?.problem
-    ? Object.values(PROBLEMS).find((p) => p.title === session.problem)
+  // find problem data based on session problem title or provide interview fallback
+  const matchedProblem = session?.problem
+    ? Object.values(PROBLEMS).find(
+        (p) => p.title.toLowerCase() === session.problem.toLowerCase()
+      )
     : null;
+
+  const fallbackProblem = {
+    title: session?.problem || "Live Technical Interview",
+    difficulty: session?.difficulty
+      ? session.difficulty.charAt(0).toUpperCase() + session.difficulty.slice(1)
+      : "Medium",
+    category: "Technical Interview & Live Assessment",
+    description: {
+      text: `Welcome to the live technical coding session for ${session?.problem || "this role"}. In this workspace, both interviewer and candidate collaborate in real-time with synchronized code editing, integrated video conferencing, chat, and instant code execution.`,
+      notes: [
+        "Use the code editor on the left to write and test your solution.",
+        "Both parties have real-time audio, video, and text communication enabled.",
+        "Press 'Run Code' to execute your program against the isolated runtime.",
+        "You can switch programming languages using the language dropdown above the editor.",
+      ],
+    },
+    examples: [
+      {
+        input: "// Candidate will write solution here",
+        output: "// Run code output appears in the panel below",
+        explanation:
+          "Collaborate with the interviewer to understand requirements and implement a clean, optimal solution.",
+      },
+    ],
+    constraints: [
+      "Real-time code synchronization is active",
+      "Both participants have full access to execute code",
+    ],
+    starterCode: {
+      javascript: `// Technical Interview Workspace\n// Role / Topic: ${session?.problem || "Coding Assessment"}\n\nfunction solution() {\n  // Write your solution here\n  console.log("Hello from Hire-Bridge Interview Workspace!");\n}\n\nsolution();\n`,
+      python: `# Technical Interview Workspace\n# Role / Topic: ${session?.problem || "Coding Assessment"}\n\ndef solution():\n    # Write your solution here\n    print("Hello from Hire-Bridge Interview Workspace!")\n\nif __name__ == "__main__":\n    solution()\n`,
+      java: `// Technical Interview Workspace\n// Role / Topic: ${session?.problem || "Coding Assessment"}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n        System.out.println("Hello from Hire-Bridge Interview Workspace!");\n    }\n}\n`,
+    },
+  };
+
+  const problemData = matchedProblem || fallbackProblem;
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");

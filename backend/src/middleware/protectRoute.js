@@ -20,21 +20,29 @@ export const protectRoute = [
 
         const clerkUser = await clerkClient.users.getUser(clerkId);
 
+        const fullName = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
+        const primaryEmail = clerkUser.emailAddresses?.[0]?.emailAddress || `${clerkId}@clerk.user`;
+        const name = fullName || clerkUser.username || primaryEmail.split("@")[0] || "User";
+
         const newUser = {
           clerkId,
-          email: clerkUser.emailAddresses[0]?.emailAddress,
-          name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
-          profileImage: clerkUser.imageUrl,
+          email: primaryEmail,
+          name,
+          profileImage: clerkUser.imageUrl || "",
         };
 
         user = await User.create(newUser);
 
-        // Also sync to Stream so video/chat features work
-        await upsertStreamUser({
-          id: clerkId,
-          name: newUser.name,
-          image: newUser.profileImage,
-        });
+        // Also sync to Stream so video/chat features work (non-fatal if Stream is offline)
+        try {
+          await upsertStreamUser({
+            id: clerkId,
+            name: newUser.name,
+            image: newUser.profileImage,
+          });
+        } catch (streamErr) {
+          console.warn("Stream user sync failed during protectRoute auto-sync (non-fatal):", streamErr.message);
+        }
 
         console.log(`✅ Auto-synced user ${clerkId} to DB and Stream.`);
       }

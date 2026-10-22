@@ -134,18 +134,30 @@ export async function inviteToInterview(req, res) {
     const job = await Job.findById(candidate.job);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    // already invited — return the existing session instead of creating a duplicate
+    // already invited — return the existing session if it is still active
     if (candidate.session) {
-      return res.status(200).json({ candidate: toClient(candidate), sessionId: candidate.session });
+      const existingSession = await Session.findById(candidate.session);
+      if (existingSession && existingSession.status === "active") {
+        return res.status(200).json({
+          candidate: toClient(candidate),
+          sessionId: candidate.session,
+          inviteCode: existingSession.inviteCode,
+          isExisting: true,
+        });
+      }
+      // If the old session was completed or deleted, allow creating a fresh one
+      candidate.session = null;
     }
 
     const clerkId = req.user.clerkId;
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const inviteCode = `${callId}_${Math.random().toString(36).substring(2, 8)}`;
+    const problemName = req.body?.problem || `Interview: ${job.title}`;
+    const difficulty = req.body?.difficulty || "medium";
 
     const session = await Session.create({
-      problem: `Interview: ${job.title}`,
-      difficulty: "medium",
+      problem: problemName,
+      difficulty,
       visibility: "private",
       host: req.user._id,
       callId,
@@ -160,7 +172,7 @@ export async function inviteToInterview(req, res) {
           created_by_id: clerkId,
           custom: {
             problem: session.problem,
-            difficulty: "medium",
+            difficulty,
             visibility: "private",
             sessionId: session._id.toString(),
           },
@@ -181,10 +193,15 @@ export async function inviteToInterview(req, res) {
     candidate.status = "shortlisted";
     await candidate.save();
 
-    res.status(201).json({ candidate: toClient(candidate), sessionId: session._id });
+    res.status(201).json({
+      candidate: toClient(candidate),
+      sessionId: session._id,
+      inviteCode: session.inviteCode,
+      isExisting: false,
+    });
   } catch (error) {
     console.error("Error in inviteToInterview controller:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: error.message || "Internal Server Error" });
   }
 }
 

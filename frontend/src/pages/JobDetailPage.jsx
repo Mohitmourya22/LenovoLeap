@@ -13,6 +13,7 @@ import {
 import Navbar from "../components/Navbar";
 import ResumeUploadCard from "../components/ResumeUploadCard";
 import CandidateCard from "../components/CandidateCard";
+import CandidateInviteModal from "../components/CandidateInviteModal";
 import {
   useJob,
   useCandidates,
@@ -37,6 +38,7 @@ function JobDetailPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("");
   const [pendingId, setPendingId] = useState(null);
+  const [inviteModalData, setInviteModalData] = useState(null);
 
   const { data: jobData, isLoading: loadingJob, refetch: refetchJob } = useJob(id);
   const { data: candData, isLoading: loadingCandidates, refetch: refetchCandidates } = useCandidates(id, statusFilter);
@@ -69,16 +71,36 @@ function JobDetailPage() {
   const handleRescore = (cid) => runOnCandidate(cid, () => rescore.mutateAsync(cid));
   const handleDelete = (cid) => runOnCandidate(cid, () => removeCandidate.mutateAsync(cid));
 
-  const handleInvite = async (cid) => {
-    setPendingId(cid);
+  const handleInvite = async (candidate) => {
+    const candidateId = candidate?._id || candidate;
+    setPendingId(candidateId);
     try {
-      const data = await invite.mutateAsync(cid);
+      const data = await invite.mutateAsync(candidateId);
       await refetchCandidates();
-      if (data?.sessionId) navigate(`/session/${data.sessionId}`);
+      const updatedCandidate = {
+        ...(typeof candidate === "object" ? candidate : candidates.find((c) => c._id === candidateId) || {}),
+        session: data.sessionId,
+        status: "shortlisted",
+      };
+      setInviteModalData({
+        candidate: updatedCandidate,
+        sessionId: data.sessionId,
+      });
     } catch {
       // error toast handled by the mutation hook
     } finally {
       setPendingId(null);
+    }
+  };
+
+  const handleShareInvite = (cand) => {
+    if (cand?.session) {
+      setInviteModalData({
+        candidate: cand,
+        sessionId: cand.session,
+      });
+    } else {
+      handleInvite(cand);
     }
   };
 
@@ -270,6 +292,7 @@ function JobDetailPage() {
                     onReject={handleReject}
                     onRescore={handleRescore}
                     onInvite={handleInvite}
+                    onShareInvite={handleShareInvite}
                     onDelete={handleDelete}
                   />
                 ))}
@@ -303,6 +326,19 @@ function JobDetailPage() {
           </div>
         </div>
       </div>
+
+      <CandidateInviteModal
+        isOpen={Boolean(inviteModalData)}
+        onClose={() => setInviteModalData(null)}
+        candidate={inviteModalData?.candidate}
+        job={job}
+        sessionId={inviteModalData?.sessionId}
+        onEnterSession={() => {
+          if (inviteModalData?.sessionId) {
+            navigate(`/session/${inviteModalData.sessionId}`);
+          }
+        }}
+      />
     </div>
   );
 }
