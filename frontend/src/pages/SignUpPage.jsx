@@ -1,7 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { SignUp } from "@clerk/clerk-react";
 
 function SignUpPage() {
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect_url") || "/dashboard";
+  const signInUrl = redirectUrl !== "/dashboard"
+    ? `/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`
+    : "/sign-in";
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(129,39,207,0.12),transparent_36%),linear-gradient(180deg,#f8f7ff,white)] px-4 py-8 text-slate-900">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
@@ -12,7 +18,7 @@ function SignUpPage() {
                 <Link to="/" className="font-semibold text-indigo-700 hover:text-indigo-800">
                   Back to home
                 </Link>
-                <Link to="/sign-in" className="font-semibold text-slate-700 hover:text-indigo-700">
+                <Link to={signInUrl} className="font-semibold text-slate-700 hover:text-indigo-700">
                   Sign in
                 </Link>
               </div>
@@ -20,9 +26,8 @@ function SignUpPage() {
               <SignUp
                 routing="path"
                 path="/sign-up"
-                signInUrl="/sign-in"
-                forceRedirectUrl="/dashboard"
-                fallbackRedirectUrl="/dashboard"
+                signInUrl={signInUrl}
+                fallbackRedirectUrl={redirectUrl}
               />
             </div>
           </div>

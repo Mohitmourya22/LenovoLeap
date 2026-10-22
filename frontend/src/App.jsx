@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/clerk-react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 
 import { Toaster } from "react-hot-toast";
@@ -12,6 +12,20 @@ import SignUpPage from "./pages/SignUpPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import JobsPage from "./pages/JobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
+
+function ProtectedSessionRoute() {
+  const { isSignedIn, isLoaded } = useUser();
+  const location = useLocation();
+
+  if (!isLoaded) return null;
+
+  if (!isSignedIn) {
+    const target = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/sign-in?redirect_url=${target}`} replace />;
+  }
+
+  return <SessionPage />;
+}
 
 function App() {
   const { isSignedIn, isLoaded } = useUser();
@@ -30,7 +44,7 @@ function App() {
 
         <Route path="/problems" element={isSignedIn ? <ProblemsPage /> : <Navigate to={"/"} />} />
         <Route path="/problem/:id" element={isSignedIn ? <ProblemPage /> : <Navigate to={"/"} />} />
-        <Route path="/session/:id" element={isSignedIn ? <SessionPage /> : <Navigate to={"/"} />} />
+        <Route path="/session/:id" element={<ProtectedSessionRoute />} />
 
         <Route path="/jobs" element={isSignedIn ? <JobsPage /> : <Navigate to={"/"} />} />
         <Route path="/jobs/:id" element={isSignedIn ? <JobDetailPage /> : <Navigate to={"/"} />} />

@@ -23,15 +23,19 @@ export async function createJob(req, res) {
       minExperienceYears,
     } = req.body;
 
-    if (!title || !description) {
+    if (!title?.trim() || !description?.trim()) {
       return res.status(400).json({ message: "Title and description are required" });
     }
 
+    if (!req.user?._id) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
     const job = await Job.create({
-      title,
-      description,
-      company: company || "",
-      location: location || "Remote",
+      title: title.trim(),
+      description: description.trim(),
+      company: (company || "").trim(),
+      location: (location || "Remote").trim(),
       employmentType: employmentType || "full-time",
       requiredSkills: normalizeSkills(requiredSkills),
       niceToHaveSkills: normalizeSkills(niceToHaveSkills),
@@ -42,7 +46,7 @@ export async function createJob(req, res) {
     res.status(201).json({ job });
   } catch (error) {
     console.error("Error in createJob controller:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: error.message || "Internal Server Error" });
   }
 }
 

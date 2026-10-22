@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { createJobsApi } from "../api/jobs";
 import { useAxiosWithAuth } from "../lib/axios";
@@ -42,13 +42,18 @@ export const useJob = (id) => {
 };
 
 export const useCreateJob = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["createJob"],
     mutationFn: jobsApi.createJob,
-    onSuccess: () => toast.success("Job posted successfully!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      toast.success("Job posted successfully!");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to post job"),
   });
 
@@ -56,13 +61,19 @@ export const useCreateJob = () => {
 };
 
 export const useUpdateJobStatus = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["updateJobStatus"],
     mutationFn: jobsApi.updateJobStatus,
-    onSuccess: () => toast.success("Job status updated!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["job"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      toast.success("Job status updated!");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to update job"),
   });
 
@@ -70,13 +81,18 @@ export const useUpdateJobStatus = () => {
 };
 
 export const useDeleteJob = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["deleteJob"],
     mutationFn: jobsApi.deleteJob,
-    onSuccess: () => toast.success("Job deleted"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      toast.success("Job deleted");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to delete job"),
   });
 
@@ -99,13 +115,19 @@ export const useCandidates = (jobId, status) => {
 };
 
 export const useUploadResume = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["uploadResume"],
     mutationFn: jobsApi.uploadResume,
-    onSuccess: () => toast.success("Resume screened!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      toast.success("Resume screened!");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to screen resume"),
   });
 
@@ -113,13 +135,19 @@ export const useUploadResume = () => {
 };
 
 export const useUpdateCandidateStatus = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["updateCandidateStatus"],
     mutationFn: jobsApi.updateCandidateStatus,
-    onSuccess: () => toast.success("Candidate updated!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      toast.success("Candidate updated!");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to update candidate"),
   });
 
@@ -127,13 +155,18 @@ export const useUpdateCandidateStatus = () => {
 };
 
 export const useRescoreCandidate = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["rescoreCandidate"],
     mutationFn: jobsApi.rescoreCandidate,
-    onSuccess: () => toast.success("Candidate re-scored!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      toast.success("Candidate re-scored!");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to re-score candidate"),
   });
 
@@ -141,13 +174,19 @@ export const useRescoreCandidate = () => {
 };
 
 export const useInviteCandidate = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["inviteCandidate"],
     mutationFn: jobsApi.inviteCandidate,
-    onSuccess: () => toast.success("Interview session created!"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      toast.success("Interview session created!");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to create interview"),
   });
 
@@ -155,13 +194,19 @@ export const useInviteCandidate = () => {
 };
 
 export const useDeleteCandidate = () => {
+  const queryClient = useQueryClient();
   const axiosInstance = useAxiosWithAuth();
   const jobsApi = createJobsApi(axiosInstance);
 
   const result = useMutation({
     mutationKey: ["deleteCandidate"],
     mutationFn: jobsApi.deleteCandidate,
-    onSuccess: () => toast.success("Candidate removed"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["jobStats"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      toast.success("Candidate removed");
+    },
     onError: (error) => toast.error(error.response?.data?.message || "Failed to remove candidate"),
   });
 

@@ -8,6 +8,7 @@ import {
   MailIcon,
   SparklesIcon,
   BriefcaseIcon,
+  Share2Icon,
 } from "lucide-react";
 import MatchScoreRing from "./MatchScoreRing";
 
@@ -22,7 +23,7 @@ const statusPill = (status) => {
   }
 };
 
-function CandidateCard({ candidate, onShortlist, onReject, onRescore, onInvite, onDelete, isBusy }) {
+function CandidateCard({ candidate, onShortlist, onReject, onRescore, onInvite, onShareInvite, onDelete, isBusy }) {
   const navigate = useNavigate();
   const {
     _id,
@@ -161,16 +162,27 @@ function CandidateCard({ candidate, onShortlist, onReject, onRescore, onInvite, 
         )}
 
         {session ? (
-          <button
-            onClick={() => navigate(`/session/${session}`)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-700 px-3 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5"
-          >
-            <VideoIcon className="size-4" />
-            Open interview
-          </button>
+          <>
+            <button
+              onClick={() => navigate(`/session/${session}`)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-700 px-3 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+            >
+              <VideoIcon className="size-4" />
+              Open interview
+            </button>
+            <button
+              onClick={() => (onShareInvite ? onShareInvite(candidate) : onInvite(candidate))}
+              disabled={isBusy}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+              title="Share or copy interview link"
+            >
+              <Share2Icon className="size-4" />
+              Share invite
+            </button>
+          </>
         ) : (
           <button
-            onClick={() => onInvite(_id)}
+            onClick={() => onInvite(candidate)}
             disabled={isBusy}
             className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-700 px-3 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 disabled:opacity-50"
           >
