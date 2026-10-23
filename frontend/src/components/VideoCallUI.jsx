@@ -4,20 +4,49 @@ import {
   SpeakerLayout,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
-import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon } from "lucide-react";
-import { useState } from "react";
+import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon, SparklesIcon } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Channel, Chat, MessageInput, MessageList, Thread, Window } from "stream-chat-react";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import "stream-chat-react/dist/css/v2/index.css";
 
-function VideoCallUI({ chatClient, channel }) {
+// Note: Aap apne app ke hisab se userRole pass kar sakte hain (e.g., props se ya auth context se)
+// Jaise: function VideoCallUI({ chatClient, channel, userRole = "candidate", onOpenAIInsights })
+function VideoCallUI({ chatClient, channel, userRole = "candidate" }) {
   const navigate = useNavigate();
   const { useCallCallingState, useParticipantCount } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participantCount = useParticipantCount();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+
+  // --- TAB SWITCHING & FOCUS LOSS DETECTION ---
+  useEffect(() => {
+    // Sirf candidates ke liye ya sabhi ke liye monitoring active rakhne ke liye logic
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchCount((prev) => {
+          const newCount = prev + 1;
+          alert(`⚠️ Warning #${newCount}: You have switched tabs or minimized the window during the active interview! This activity is monitored.`);
+          return newCount;
+        });
+      }
+    };
+
+    const handleWindowBlur = () => {
+      console.warn("User shifted focus away from the interview window.");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+    };
+  }, []);
 
   if (callingState === CallingState.JOINING) {
     return (
@@ -33,24 +62,44 @@ function VideoCallUI({ chatClient, channel }) {
   return (
     <div className="h-full flex gap-3 relative str-video">
       <div className="flex-1 flex flex-col gap-3">
-        {/* Participants count badge and Chat Toggle */}
+        {/* Participants count badge, AI Insights (Interviewer only), and Chat Toggle */}
         <div className="flex items-center justify-between gap-2 bg-base-100 p-3 rounded-lg shadow">
           <div className="flex items-center gap-2">
             <UsersIcon className="w-5 h-5 text-primary" />
             <span className="font-semibold">
               {participantCount} {participantCount === 1 ? "participant" : "participants"}
             </span>
+            {tabSwitchCount > 0 && userRole === "candidate" && (
+              <span className="text-xs bg-error text-error-content px-2 py-1 rounded-full">
+                Tab Switches: {tabSwitchCount}
+              </span>
+            )}
           </div>
-          {chatClient && channel && (
-            <button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className={`btn btn-sm gap-2 ${isChatOpen ? "btn-primary" : "btn-ghost"}`}
-              title={isChatOpen ? "Hide chat" : "Show chat"}
-            >
-              <MessageSquareIcon className="size-4" />
-              Chat
-            </button>
-          )}
+
+          <div className="flex items-center gap-2">
+            {/* 1. AI INSIGHTS: ONLY VISIBLE TO INTERVIEWER / ADMIN (Hidden for Candidate) */}
+            {userRole === "interviewer" && (
+              <button
+                onClick={() => alert("Opening AI Insights Panel...")}
+                className="btn btn-sm btn-outline btn-primary gap-2"
+                title="AI Insights"
+              >
+                <SparklesIcon className="size-4" />
+                AI Insights
+              </button>
+            )}
+
+            {chatClient && channel && (
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`btn btn-sm gap-2 ${isChatOpen ? "btn-primary" : "btn-ghost"}`}
+                title={isChatOpen ? "Hide chat" : "Show chat"}
+              >
+                <MessageSquareIcon className="size-4" />
+                Chat
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 bg-base-300 rounded-lg overflow-hidden relative">
@@ -63,7 +112,6 @@ function VideoCallUI({ chatClient, channel }) {
       </div>
 
       {/* CHAT SECTION */}
-
       {chatClient && channel && (
         <div
           className={`flex flex-col rounded-lg shadow overflow-hidden bg-[#272a30] transition-all duration-300 ease-in-out ${
@@ -100,4 +148,5 @@ function VideoCallUI({ chatClient, channel }) {
     </div>
   );
 }
+
 export default VideoCallUI;
